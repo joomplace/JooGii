@@ -118,7 +118,7 @@ JFactory::getDocument()->addScriptDeclaration("
 						<div class="accordion-inner">
 							<div class="differ">
 								<?php
-								foreach ($diff as $line){
+								foreach ($diff as $k => $line){
 									if(count($line)==1){
 										$string = '&nbsp;';
 										$action = $line[0];
@@ -127,7 +127,7 @@ JFactory::getDocument()->addScriptDeclaration("
 										$action = $line[1];
 									}
 									?>
-									<div class="<?= ($action==1)?'deleted':(($action==2)?'added':''); ?>">
+									<div class="<?= ($action==1)?'deleted':(($action==2)?'added':'not_changed'); ?>">
 										<?= str_replace(array("\t",'    '),'&nbsp;&nbsp;&nbsp;&nbsp;',htmlspecialchars($string)) ?>
 									</div>
 									<?php

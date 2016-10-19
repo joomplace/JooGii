@@ -15,6 +15,9 @@ use Joomplace\Library\JooYii\Loader;
 use ReflectionMethod;
 use Stephenmorley\JooGii\Site\Library\Diff;
 
+jimport('joomla.filesystem.folder');
+jimport('joomla.filesystem.file');
+
 class Dashboard extends Controller
 {
 	public function createView($class, $layout = 'default', $component, $place, $vendor, $ext = 'php')
@@ -32,8 +35,92 @@ class Dashboard extends Controller
 		$this->success();
 	}
 
+	public function regenerateXML($vendor, $component, $place){
+		$vars = array(
+			'component' => $component,
+			'place'     => $place,
+			'vendor'    => $vendor,
+		);
+		list($path) = Loader::extractPaths($vendor . '\\' . ucfirst($component) . '\\Site\\','/');
+		list($apath) = Loader::extractPaths($vendor . '\\' . ucfirst($component) . '\\Admin\\','/');
+		if(is_dir($path)){
+			$vars['folders'] = array(\JFolder::folders($path));
+			$vars['folders'] = $vars['folders'][0];
+			$vars['files'] = array(\JFolder::files($path));
+			$vars['files'] = array_filter($vars['files'][0],function($item)use($component){
+				if($item==lcfirst($component).'.xml'){
+					return false;
+				}else{
+					return $item;
+				}
+			});
+		}else{
+			$vars['folders'] = $vars['files'] = array();
+		}
+		if(is_dir($apath)){
+			$vars['admin_folders'] = array(\JFolder::folders($apath));
+			$vars['admin_folders'] = $vars['admin_folders'][0];
+			$vars['admin_files'] = array(\JFolder::files($apath));
+			$vars['admin_files'] = array_filter($vars['admin_files'][0],function($item)use($component){
+				if($item==lcfirst($component).'.xml'){
+					return false;
+				}else{
+					return $item;
+				}
+			});
+		}else{
+			$vars['admin_folders'] = $vars['admin_files'] = array();
+		}
+		$new_content = $this->render('preset.manifest', $vars);
+
+		list($root_file) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\'.lcfirst($component));
+		$root_xml = str_replace('.php','.xml',$root_file);
+		return \JFile::write($root_xml, $new_content);
+	}
+
+	public function createComponent($vendor, $component, $place, $router = true){
+		$newClass = $vendor . '\\' . $component . '\\' . $place . '\\Component';
+		if(!class_exists($newClass)){
+			$vars = array(
+				'component' => $component,
+				'place'     => $place,
+				'vendor'    => $vendor,
+			);
+			$classes = array(
+				'Component',
+			);
+			if($router){
+				$classes[] = 'Router';
+			}
+
+			jimport('joomla.filesystem.folder');
+			jimport('joomla.filesystem.file');
+			$results = array_map(function($class)use($vars,$newClass){
+				$vars['class'] = $class;
+				$new_content = $this->render('preset.' . $class, $vars);
+
+				list($path) = Loader::extractPaths($newClass);
+				return \JFile::write($path, $new_content);
+			},$classes);
+
+			list($root_file) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\'.lcfirst($component));
+			$new_content = $this->render('preset.manifest', $vars);
+			$results[] = \JFile::write($root_file, $new_content);
+
+			if(in_array(false,$results)){
+				// issues
+			}else{
+				$this->success();
+			}
+		}
+	}
+
 	public function generate($file, $class, $layout = 'default', $component, $place, $vendor, $functions, $force = 0)
 	{
+		if(!class_exists($vendor . '\\' . $component . '\\' . $place . '\\Component')){
+			$this->createComponent($vendor, $component, $place);
+		}
+
 		if($file=='View'){
 			$this->createView($class,$layout,$component,$place,$vendor,'php');
 		}else{
@@ -49,6 +136,7 @@ class Dashboard extends Controller
 			}
 			$newClass = $vendor . '\\' . $component . '\\' . $place . $folder . '\\' . ucfirst($class);
 
+			$functions = explode(',', str_replace(array(' ', ',,'), ',', $functions));
 			if (class_exists($newClass))
 			{
 				$functions = array_merge(
@@ -65,7 +153,7 @@ class Dashboard extends Controller
 								return false;
 							}
 						}
-					), explode(',', str_replace(array(' ', ',,'), ',', $functions))
+					), $functions
 				);
 				$functions = array_unique($functions);
 			}
@@ -146,6 +234,7 @@ class Dashboard extends Controller
 				$this->success();
 			}
 		}
+		$this->regenerateXML($vendor,$component,$place);
 	}
 
 	protected function success(){
