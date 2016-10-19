@@ -20,6 +20,14 @@ jimport('joomla.filesystem.file');
 
 class Dashboard extends Controller
 {
+	/**
+	 * @param        $class
+	 * @param string $layout
+	 * @param        $component
+	 * @param        $place
+	 * @param        $vendor
+	 * @param string $ext
+	 */
 	public function createView($class, $layout = 'default', $component, $place, $vendor, $ext = 'php')
 	{
 		$ns   = $vendor . '\\' . $component . '\\' . $place;
@@ -35,6 +43,13 @@ class Dashboard extends Controller
 		$this->success();
 	}
 
+	/**
+	 * @param $vendor
+	 * @param $component
+	 * @param $place
+	 *
+	 * @return bool
+	 */
 	public function regenerateXML($vendor, $component, $place){
 		$vars = array(
 			'component' => $component,
@@ -78,6 +93,12 @@ class Dashboard extends Controller
 		return \JFile::write($root_xml, $new_content);
 	}
 
+	/**
+	 * @param      $vendor
+	 * @param      $component
+	 * @param      $place
+	 * @param bool $router
+	 */
 	public function createComponent($vendor, $component, $place, $router = true){
 		$newClass = $vendor . '\\' . $component . '\\' . $place . '\\Component';
 		if(!class_exists($newClass)){
@@ -115,6 +136,16 @@ class Dashboard extends Controller
 		}
 	}
 
+	/**
+	 * @param        $file
+	 * @param        $class
+	 * @param string $layout
+	 * @param        $component
+	 * @param        $place
+	 * @param        $vendor
+	 * @param        $functions
+	 * @param int    $force
+	 */
 	public function generate($file, $class, $layout = 'default', $component, $place, $vendor, $functions, $force = 0)
 	{
 		if(!class_exists($vendor . '\\' . $component . '\\' . $place . '\\Component')){
@@ -238,7 +269,7 @@ class Dashboard extends Controller
 	}
 
 	protected function success(){
-		echo 'Success';
+		\JFactory::getApplication()->enqueueMessage('Code generated successfully');
 	}
 
 	/**
