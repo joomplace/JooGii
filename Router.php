@@ -6,16 +6,15 @@
  * Time: 15:14
  */
 
-namespace Joomplace\JooGii\Site;
+namespace Joomplace\Joogii\Site;
+
+use \Joomplace\Library\JooYii\Router as BaseRouter;
 
 defined('_JEXEC') or die;
-if(!defined('DS')){
-	define('DS',DIRECTORY_SEPARATOR);
-}
 
-jimport('jooyii.autoloader',JPATH_LIBRARIES.DS);
+jimport('JooYii.autoloader',JPATH_LIBRARIES);
 
-class Router extends \Joomplace\Library\JooYii\Router
+class Router extends BaseRouter
 {
 	protected function setNamespace()
 	{
