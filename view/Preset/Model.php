@@ -3,6 +3,12 @@
 echo "<?php \r\n";
 
 ?>
+/**
+* Created by JooGii.
+* User: <?= JFactory::getUser()->name ?>;
+* Date: <?= JHtml::_('date','now','d.m.Y') ?>;
+* Time: <?= JHtml::_('date','now','H:i') ?>;
+*/
 namespace <?= ucfirst($vendor) ?>\<?= ucfirst($component) ?>\<?= ucfirst($place) ?>\Model;
 
 use Joomplace\Library\JooYii\Model;

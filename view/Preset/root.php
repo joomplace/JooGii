@@ -1,6 +1,7 @@
 <?php
-echo "<?php";
+echo "<?php ";
 ?>
+
 namespace <?= ucfirst($vendor) ?>\<?= ucfirst($component) ?>\<?= ucfirst($place) ?>;
 
 defined('_JEXEC') or die;

@@ -21,122 +21,6 @@ jimport('joomla.filesystem.file');
 class Dashboard extends Controller
 {
 	/**
-	 * @param        $class
-	 * @param string $layout
-	 * @param        $component
-	 * @param        $place
-	 * @param        $vendor
-	 * @param string $ext
-	 */
-	public function createView($class, $layout = 'default', $component, $place, $vendor, $ext = 'php')
-	{
-		$ns   = $vendor . '\\' . $component . '\\' . $place;
-		list($path) = Loader::extractPaths($ns . '\\View\\' . $class, '/');
-		$path .= '/' . $layout . '.' . $ext;
-		if (!is_file($path))
-		{
-			$vars        = array();
-			$new_content = $this->render('preset.view', $vars);
-			jimport('joomla.filesystem.file');
-			\JFile::write($path, $new_content);
-		}
-		$this->success();
-	}
-
-	/**
-	 * @param $vendor
-	 * @param $component
-	 * @param $place
-	 *
-	 * @return bool
-	 */
-	public function regenerateXML($vendor, $component, $place){
-		$vars = array(
-			'component' => $component,
-			'place'     => $place,
-			'vendor'    => $vendor,
-		);
-		list($path) = Loader::extractPaths($vendor . '\\' . ucfirst($component) . '\\Site\\','/');
-		list($apath) = Loader::extractPaths($vendor . '\\' . ucfirst($component) . '\\Admin\\','/');
-		if(is_dir($path)){
-			$vars['folders'] = array(\JFolder::folders($path));
-			$vars['folders'] = $vars['folders'][0];
-			$vars['files'] = array(\JFolder::files($path));
-			$vars['files'] = array_filter($vars['files'][0],function($item)use($component){
-				if($item==lcfirst($component).'.xml'){
-					return false;
-				}else{
-					return $item;
-				}
-			});
-		}else{
-			$vars['folders'] = $vars['files'] = array();
-		}
-		if(is_dir($apath)){
-			$vars['admin_folders'] = array(\JFolder::folders($apath));
-			$vars['admin_folders'] = $vars['admin_folders'][0];
-			$vars['admin_files'] = array(\JFolder::files($apath));
-			$vars['admin_files'] = array_filter($vars['admin_files'][0],function($item)use($component){
-				if($item==lcfirst($component).'.xml'){
-					return false;
-				}else{
-					return $item;
-				}
-			});
-		}else{
-			$vars['admin_folders'] = $vars['admin_files'] = array();
-		}
-		$new_content = $this->render('preset.manifest', $vars);
-
-		list($root_file) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\'.lcfirst($component));
-		$root_xml = str_replace('.php','.xml',$root_file);
-		return \JFile::write($root_xml, $new_content);
-	}
-
-	/**
-	 * @param      $vendor
-	 * @param      $component
-	 * @param      $place
-	 * @param bool $router
-	 */
-	public function createComponent($vendor, $component, $place, $router = true){
-		$newClass = $vendor . '\\' . $component . '\\' . $place . '\\Component';
-		if(!class_exists($newClass)){
-			$vars = array(
-				'component' => $component,
-				'place'     => $place,
-				'vendor'    => $vendor,
-			);
-			$classes = array(
-				'Component',
-			);
-			if($router){
-				$classes[] = 'Router';
-			}
-
-			jimport('joomla.filesystem.folder');
-			jimport('joomla.filesystem.file');
-			$results = array_map(function($class)use($vars,$newClass){
-				$vars['class'] = $class;
-				$new_content = $this->render('preset.' . $class, $vars);
-
-				list($path) = Loader::extractPaths($newClass);
-				return \JFile::write($path, $new_content);
-			},$classes);
-
-			list($root_file) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\'.lcfirst($component));
-			$new_content = $this->render('preset.manifest', $vars);
-			$results[] = \JFile::write($root_file, $new_content);
-
-			if(in_array(false,$results)){
-				// issues
-			}else{
-				$this->success();
-			}
-		}
-	}
-
-	/**
 	 * @param        $file
 	 * @param        $class
 	 * @param string $layout
@@ -148,15 +32,19 @@ class Dashboard extends Controller
 	 */
 	public function generate($file, $class, $layout = 'default', $component, $place, $vendor, $functions, $force = 0)
 	{
-		if(!class_exists($vendor . '\\' . $component . '\\' . $place . '\\Component')){
+		if (!class_exists($vendor . '\\' . $component . '\\' . $place . '\\Component'))
+		{
 			$this->createComponent($vendor, $component, $place);
 		}
 
-		if($file=='View'){
-			$this->createView($class,$layout,$component,$place,$vendor,'php');
-		}else{
+		if ($file == 'View')
+		{
+			$this->createView($class, $layout, $component, $place, $vendor, 'php');
+		}
+		else
+		{
 			$functions_data = $functions;
-			$parentClass = 'Joomplace\\Library\\JooYii\\' . ucfirst($file);
+			$parentClass    = 'Joomplace\\Library\\JooYii\\' . ucfirst($file);
 			if (in_array($file, array('component', 'router')))
 			{
 				$folder = '';
@@ -242,7 +130,10 @@ class Dashboard extends Controller
 				'component' => $component,
 				'place'     => $place,
 				'vendor'    => $vendor,
-				'functions' => $methods,
+				'functions' => array_filter($methods, function ($item)
+				{
+					return $item[0] ? $item : false;
+				}),
 			);
 
 			$new_content = $this->render('preset.' . $file, $vars);
@@ -254,7 +145,7 @@ class Dashboard extends Controller
 				$old_content = file_get_contents($path);
 				$diff        = Diff::compare($old_content, $new_content);
 
-				$vars['diff'] = $diff;
+				$vars['diff']      = $diff;
 				$vars['functions'] = $functions_data;
 				echo $this->render('form', $vars);
 			}
@@ -265,11 +156,86 @@ class Dashboard extends Controller
 				$this->success();
 			}
 		}
-		$this->regenerateXML($vendor,$component,$place);
+		$this->regenerateXML($vendor, $component, $place);
 	}
 
-	protected function success(){
+	/**
+	 * @param      $vendor
+	 * @param      $component
+	 * @param      $place
+	 * @param bool $router
+	 */
+	public function createComponent($vendor, $component, $place, $router = true)
+	{
+		$newClass = $vendor . '\\' . $component . '\\' . $place . '\\Component';
+		if (!class_exists($newClass))
+		{
+			$vars    = array(
+				'component' => $component,
+				'place'     => $place,
+				'vendor'    => $vendor,
+			);
+			$classes = array(
+				'Component',
+			);
+			if ($router)
+			{
+				$classes[] = 'Router';
+			}
+
+			jimport('joomla.filesystem.folder');
+			jimport('joomla.filesystem.file');
+			$results = array_map(function ($class) use ($vars, $vendor, $component, $place)
+			{
+				$vars['class'] = $class;
+				$new_content   = $this->render('Preset.' . $class, $vars);
+				list($path) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\' . $class);
+
+				return \JFile::write($path, $new_content);
+			}, $classes);
+
+			list($root_file) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\' . lcfirst($component));
+			$new_content = $this->render('preset.root', $vars);
+			$results[]   = \JFile::write($root_file, $new_content);
+
+			if (in_array(false, $results))
+			{
+				// issues
+			}
+			else
+			{
+				$this->success();
+			}
+		}
+	}
+
+	protected function success()
+	{
 		\JFactory::getApplication()->enqueueMessage('Code generated successfully');
+	}
+
+	/**
+	 * @param        $class
+	 * @param string $layout
+	 * @param        $component
+	 * @param        $place
+	 * @param        $vendor
+	 * @param string $ext
+	 */
+	public function createView($class, $layout = 'default', $component, $place, $vendor, $ext = 'php')
+	{
+		$ns = $vendor . '\\' . $component . '\\' . $place;
+		/* Low V as we work with J3 */
+		list($path) = Loader::extractPaths($ns . '\\view\\' . $class, '/');
+		$path .= '/' . $layout . '.' . $ext;
+		if (!is_file($path))
+		{
+			$vars        = array();
+			$new_content = $this->render('Preset.View', $vars);
+			jimport('joomla.filesystem.file');
+			\JFile::write($path, $new_content);
+		}
+		$this->success();
 	}
 
 	/**
@@ -317,5 +283,71 @@ class Dashboard extends Controller
 		$body   = implode("", array_slice($source, $start_line, $length));
 
 		return $body;
+	}
+
+	/**
+	 * @param $vendor
+	 * @param $component
+	 * @param $place
+	 *
+	 * @return bool
+	 */
+	public function regenerateXML($vendor, $component, $place)
+	{
+		$vars = array(
+			'component' => $component,
+			'place'     => $place,
+			'vendor'    => $vendor,
+		);
+		list($path) = Loader::extractPaths($vendor . '\\' . ucfirst($component) . '\\Site\\', '/');
+		list($apath) = Loader::extractPaths($vendor . '\\' . ucfirst($component) . '\\Admin\\', '/');
+		if (is_dir($path))
+		{
+			$vars['folders'] = array(\JFolder::folders($path));
+			$vars['folders'] = $vars['folders'][0];
+			$vars['files']   = array(\JFolder::files($path));
+			$vars['files']   = array_filter($vars['files'][0], function ($item) use ($component)
+			{
+				if ($item == lcfirst($component) . '.xml')
+				{
+					return false;
+				}
+				else
+				{
+					return $item;
+				}
+			});
+		}
+		else
+		{
+			$vars['folders'] = $vars['files'] = array();
+		}
+		if (is_dir($apath))
+		{
+			$vars['admin_folders'] = array(\JFolder::folders($apath));
+			$vars['admin_folders'] = $vars['admin_folders'][0];
+			$vars['admin_files']   = array(\JFolder::files($apath));
+			$vars['admin_files']   = array_filter($vars['admin_files'][0], function ($item) use ($component)
+			{
+				if ($item == lcfirst($component) . '.xml')
+				{
+					return false;
+				}
+				else
+				{
+					return $item;
+				}
+			});
+		}
+		else
+		{
+			$vars['admin_folders'] = $vars['admin_files'] = array();
+		}
+		$new_content = $this->render('preset.manifest', $vars);
+
+		list($root_file) = Loader::extractPaths($vendor . '\\' . $component . '\\' . $place . '\\' . lcfirst($component));
+		$root_xml = str_replace('.php', '.xml', $root_file);
+
+		return \JFile::write($root_xml, $new_content);
 	}
 }

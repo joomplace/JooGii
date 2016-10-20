@@ -52,11 +52,9 @@ JFactory::getDocument()->addScriptDeclaration("
 		var logic_part = jQuery('#file > input:checked').val();
 		if(logic_part=='Controller' || logic_part=='Model'){
 			jQuery('#functions_block').show();
-			jQuery('#vendor_block').show();
 		}
 		if(logic_part=='View'){
 			jQuery('#functions_block').hide();
-			jQuery('#vendor_block').hide();
 		}
 	}
 	jQuery(document).ready(function($){
