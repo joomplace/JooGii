@@ -15,6 +15,8 @@ defined('_JEXEC') or die;
 
 class Component extends \Joomplace\Library\JooYii\Component
 {
+    protected static $_default_controller = 'dashboard';
+
     protected function setNamespace()
     {
         $this->_namespace = __NAMESPACE__;
